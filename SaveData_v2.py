@@ -32,10 +32,12 @@ client = API(access_token=access_token)
 api = oandapyV20.API(access_token=access_token)
 
 
-start1 = [datetime.datetime(2008,1,1),datetime.datetime(2008,7,1),datetime.datetime(2009,1,1),datetime.datetime(2009,7,1),datetime.datetime(2010,1,1),datetime.datetime(2010,7,1),datetime.datetime(2011,1,1),datetime.datetime(2011,7,1),datetime.datetime(2012,1,1),datetime.datetime(2012,7,1),datetime.datetime(2013,1,1),datetime.datetime(2013,7,1),datetime.datetime(2014,1,1),datetime.datetime(2014,7,1),datetime.datetime(2015,1,1),datetime.datetime(2015,7,1),datetime.datetime(2016,1,1),datetime.datetime(2016,7,1),datetime.datetime(2017,1,1),datetime.datetime(2017,7,1),datetime.datetime(2018,1,1),datetime.datetime(2018,7,1),datetime.datetime(2019,1,1)]
-end1 = [datetime.datetime(2008,7,1),datetime.datetime(2009,1,1),datetime.datetime(2009,7,1),datetime.datetime(2010,1,1),datetime.datetime(2010,7,1),datetime.datetime(2011,1,1),datetime.datetime(2011,7,1),datetime.datetime(2012,1,1),datetime.datetime(2012,7,1),datetime.datetime(2013,1,1),datetime.datetime(2013,7,1),datetime.datetime(2014,1,1),datetime.datetime(2014,7,1),datetime.datetime(2015,1,1),datetime.datetime(2015,7,1),datetime.datetime(2016,1,1),datetime.datetime(2016,7,1),datetime.datetime(2017,1,1),datetime.datetime(2017,7,1),datetime.datetime(2018,1,1),datetime.datetime(2018,7,1),datetime.datetime(2019,1,1),datetime.datetime(2019,10,31)]
+start1 = [datetime.datetime(2008,1,1),datetime.datetime(2008,7,1),datetime.datetime(2009,1,1),datetime.datetime(2009,7,1),datetime.datetime(2010,1,1),datetime.datetime(2010,7,1),datetime.datetime(2011,1,1),datetime.datetime(2011,7,1),datetime.datetime(2012,1,1),datetime.datetime(2012,7,1),datetime.datetime(2013,1,1),datetime.datetime(2013,7,1),datetime.datetime(2014,1,1),datetime.datetime(2014,7,1),datetime.datetime(2015,1,1),datetime.datetime(2015,7,1),datetime.datetime(2016,1,1),datetime.datetime(2016,7,1),datetime.datetime(2017,1,1),datetime.datetime(2017,7,1),datetime.datetime(2018,1,1),datetime.datetime(2018,7,1),datetime.datetime(2019,1,1),datetime.datetime(2019,7,1),datetime.datetime(2020,1,1)]
+end1 = [datetime.datetime(2008,7,1),datetime.datetime(2009,1,1),datetime.datetime(2009,7,1),datetime.datetime(2010,1,1),datetime.datetime(2010,7,1),datetime.datetime(2011,1,1),datetime.datetime(2011,7,1),datetime.datetime(2012,1,1),datetime.datetime(2012,7,1),datetime.datetime(2013,1,1),datetime.datetime(2013,7,1),datetime.datetime(2014,1,1),datetime.datetime(2014,7,1),datetime.datetime(2015,1,1),datetime.datetime(2015,7,1),datetime.datetime(2016,1,1),datetime.datetime(2016,7,1),datetime.datetime(2017,1,1),datetime.datetime(2017,7,1),datetime.datetime(2018,1,1),datetime.datetime(2018,7,1),datetime.datetime(2019,1,1),datetime.datetime(2019,7,1),datetime.datetime(2020,1,1),datetime.datetime(2020,6,1)]
 
 step = datetime.timedelta(days=1)
+
+currency_pair = "USD_SEK"
 
 df = pd.DataFrame(columns = ["Time","Open","High","Low","Close"])
 
@@ -54,6 +56,7 @@ for j in list(zip(start1,end1)):
     
     df1 = pd.DataFrame(columns = ["Time","Open","High","Low","Close"])
     position = 0
+    
     for i in range(len(daterange)-1):
         print("Start {}".format(daterange[i]))
     
@@ -63,7 +66,7 @@ for j in list(zip(start1,end1)):
             "to":daterange[i+1]
               }
     
-        r= instruments.InstrumentsCandles(instrument="USD_CHF", params = params)
+        r= instruments.InstrumentsCandles(instrument=currency_pair, params = params)
         rv = api.request(r)
         response = r.response
 
@@ -72,6 +75,7 @@ for j in list(zip(start1,end1)):
     
         for i in range(counts):
             df1.loc[position,] = [response["candles"][i]["time"]] + [response["candles"][i]["mid"]['o']] +[ response["candles"][i]["mid"]['h']] + [response["candles"][i]["mid"]['l']] + [response["candles"][i]["mid"]['c'] ]
+
             position = position +1
         
     df = df.append(df1,ignore_index=True)
@@ -101,5 +105,22 @@ for i in range(len(TimeList)):
     df['Time'].loc[i] = ESTTime
     print(ESTTime)
 
+##### Convert Data String to Numeric, and convert USD/XYZ to XYZ/USD
+    
+df["High"] = pd.to_numeric(df["High"])
+df["Low"] = pd.to_numeric(df["Low"])
+df["Close"] = pd.to_numeric(df["Close"])
+df["Open"] = pd.to_numeric(df["Open"])
+
+if currency_pair[0:3] == "USD":
+    df[["High","Low"]] = df [["Low","High"]]
+
+    df["High"] = 1/df["High"]
+    df["Low"] = 1/df["Low"]
+    df["Close"] = 1/df["Close"]
+    df["Open"] = 1/df["Open"]
+    
+####### !!!! Note: the time shows in the csv file is the start time of the day, so it corresponds to open price, the close price corresponds to the time+24h
+    
 df.to_csv("./Data/Temp.csv")
 
